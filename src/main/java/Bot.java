@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 
 public class Bot extends TelegramLongPollingBot {
 
+    private Predictor predictor = new Predictor();
     private Logger log = Logger.getAnonymousLogger();
 
     /**
@@ -22,7 +23,7 @@ public class Bot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         String message = update.getMessage().getText();
         System.out.println(message);
-        sendMsg(update.getMessage().getChatId().toString(), message);
+        sendMsg(update.getMessage().getChatId().toString(), predictor.ask(message));
     }
 
     /**
