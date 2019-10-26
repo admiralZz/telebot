@@ -1,4 +1,9 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Predictor {
     private Random random = new Random();
@@ -17,6 +22,15 @@ public class Predictor {
 
     };
 
+    private String[] badQuestions = {
+            "(К|к)ак",
+            "(П|п)очему",
+            "(Г|г)де",
+            "(Ч|ч)то",
+            "(К|к)то"
+
+    };
+
     public Predictor()
     {
 
@@ -24,6 +38,44 @@ public class Predictor {
 
     public String ask(String question)
     {
+        String badQuestion1 = "";
+        String badQuestion2 = "";
+        for(String regex : badQuestions) {
+            badQuestion1 = Regexer.parse(question, "^" + regex + ".*$");
+            badQuestion2 = Regexer.parse(question, "^.*" + regex + "$");
+
+            if(!badQuestion1.equals("") || !badQuestion2.equals(""))
+                return "На такие вопросы я не отвечаю";
+        }
+
         return answers[random.nextInt(answers.length)];
+    }
+
+    static class Regexer
+    {
+        static String parse(String msgData, String regex)
+        {
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(msgData);
+            String msgParsing = "";
+            while(matcher.find())
+            {
+                msgParsing += msgData.substring(matcher.start(), matcher.end());
+            }
+
+            return msgParsing;
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Predictor predictor = new Predictor();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        while (true)
+        {
+            String question = reader.readLine();
+            if(!question.equals(""))
+                System.out.println(predictor.ask(question));
+        }
+
     }
 }

@@ -63,10 +63,6 @@ public class Bot extends TelegramLongPollingBot {
 
     public static void main(String[] args)
     {
-        System.setProperty("java.net.useSystemProxies", "true");
-        System.setProperty("https.proxyHost", "free.fckrknbot.com");
-        System.setProperty("https.proxyPort", "500");
-
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
