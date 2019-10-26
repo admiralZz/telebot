@@ -38,6 +38,13 @@ public class Predictor {
 
     public String ask(String question)
     {
+        if(question.equals("/start"))
+        {
+            return "Привет! Я бот-предсказатель.\n" +
+                    "Хочешь знать будущее? Можешь задать вопрос и я отвечу...\n" +
+                    "Только не спрашивай как и почему и т.п., я отвечаю только утвердительно и предсказываю события которые тебя волнуют\n";
+        }
+
         String badQuestion1 = "";
         String badQuestion2 = "";
         for(String regex : badQuestions) {
