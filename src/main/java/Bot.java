@@ -7,6 +7,11 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.generics.LongPollingBot;
 
+import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +19,15 @@ public class Bot extends TelegramLongPollingBot {
 
     private Predictor predictor = new Predictor();
     private Logger log = Logger.getAnonymousLogger();
+
+    /**
+     * Метод для подключения к базе данных на Heroku.
+     * JDBC_DATABASE_URL - содержит url(username, password, host etc.) для подключения
+     */
+    private static Connection getConnection() throws URISyntaxException, SQLException {
+        String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        return DriverManager.getConnection(dbUrl);
+    }
 
     /**
      * Метод для приема сообщений.
@@ -24,6 +38,14 @@ public class Bot extends TelegramLongPollingBot {
         String message = update.getMessage().getText();
         System.out.println(message);
         sendMsg(update.getMessage().getChatId().toString(), predictor.ask(message));
+
+//        try {
+//            Statement statement = getConnection().createStatement();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
     }
 
     /**
