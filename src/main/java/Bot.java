@@ -11,7 +11,6 @@ import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,16 +35,18 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         String message = update.getMessage().getText();
-        System.out.println(message);
-        sendMsg(update.getMessage().getChatId().toString(), predictor.ask(message));
+        String output = getContactName(update) + getContactPhone(update);
+        String answer;
 
-//        try {
-//            Statement statement = getConnection().createStatement();
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//        }
+        if(message == null && !output.equals(""))
+            answer = predictor.ask("/start");
+        else
+            answer = predictor.ask(message);
+
+        System.out.println(output + "[QUESTION]: " + message);
+        System.out.println(output + "[ANSWER]: " + answer);
+        sendMsg(update.getMessage().getChatId().toString(), answer);
+
     }
 
     /**
@@ -96,5 +97,30 @@ public class Bot extends TelegramLongPollingBot {
 
     private static LongPollingBot getBot() {
         return new Bot();
+    }
+
+    private String getContactName(Update update) {
+
+        String name;
+
+        try {
+            name = "[" + update.getMessage().getContact().getFirstName() + "]";
+        } catch (Exception e) {
+            return "";
+        }
+
+        return name;
+    }
+    private String getContactPhone(Update update)
+    {
+        String phone;
+
+        try {
+            phone = "[" + update.getMessage().getContact().getFirstName() + "]";
+        } catch (Exception e) {
+            return "";
+        }
+
+        return phone;
     }
 }
