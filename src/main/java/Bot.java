@@ -22,9 +22,20 @@ public class Bot extends TelegramLongPollingBot {
      */
     @Override
     public void onUpdateReceived(Update update) {
+        String chatId = update.getMessage().getChatId().toString();
         String message = update.getMessage().getText();
         String output = getContactName(update) + getContactPhone(update);
         String answer;
+
+        if(message.equals("/read"))
+        {
+            System.out.println("(/read): DataBase request...");
+
+            for(String row : dataBase.read())
+                sendMsg(chatId, row);
+
+            return;
+        }
 
         if(message == null && !output.equals(""))
             answer = predictor.ask("/start");
@@ -33,7 +44,10 @@ public class Bot extends TelegramLongPollingBot {
 
         System.out.println(output + "[QUESTION]: " + message);
         System.out.println(output + "[ANSWER]: " + answer);
-        sendMsg(update.getMessage().getChatId().toString(), answer);
+
+        dataBase.insert(chatId, message, answer);
+
+        sendMsg(chatId, answer);
     }
 
     /**
