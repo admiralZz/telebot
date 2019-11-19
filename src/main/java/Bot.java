@@ -14,6 +14,7 @@ public class Bot extends TelegramLongPollingBot {
 
     private Predictor predictor = new Predictor();
     private DataBase dataBase = new DataBase();
+    private Admin admin = new Admin(dataBase);
     private Logger log = Logger.getAnonymousLogger();
 
     /**
@@ -22,30 +23,27 @@ public class Bot extends TelegramLongPollingBot {
      */
     @Override
     public void onUpdateReceived(Update update) {
+
         String chatId = update.getMessage().getChatId().toString();
         String message = update.getMessage().getText();
         String output = getContactName(update) + getContactPhone(update);
         String answer;
 
-        if(message.equals("/read"))
+        if(message.equals("/admin") || admin.isActivate())
         {
-            System.out.println("(/read): DataBase request...");
-
-            for(String row : dataBase.read())
-                sendMsg(chatId, row);
-
-            return;
+            answer = admin.onUpdateReceived(message);
         }
-
-        if(message == null && !output.equals(""))
+        else if(!output.equals("")) {
             answer = predictor.ask("/start");
+        }
         else
             answer = predictor.ask(message);
 
-        System.out.println(output + "[QUESTION]: " + message);
-        System.out.println(output + "[ANSWER]: " + answer);
+        Log.log(output + "[QUESTION]: " + message);
+        Log.log(output + "[ANSWER]: " + answer);
 
-        dataBase.insert(chatId, message, answer);
+        if(!admin.isActivate())
+            dataBase.insert(chatId, message, answer);
 
         sendMsg(chatId, answer);
     }

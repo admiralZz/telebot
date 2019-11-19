@@ -38,7 +38,6 @@ public class DataBase {
             Statement statement = connection.createStatement())
         {
             statement.execute("insert into messages(chat_id,question,answer) values('" + chatId + "','" + question + "','" + answer + "');");
-
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
