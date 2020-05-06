@@ -14,7 +14,7 @@ public class Bot extends TelegramLongPollingBot {
 
     private Predictor predictor = new Predictor();
     private DataBase dataBase = new DataBase();
-    private Admin admin = new Admin(dataBase);
+    private Admin admin = new Admin(this, dataBase);
     private Logger log = Logger.getAnonymousLogger();
 
     /**
@@ -29,11 +29,16 @@ public class Bot extends TelegramLongPollingBot {
         String output = getContactName(update) + getContactPhone(update);
         String answer;
 
-        if(message.equals("/admin") || admin.isActivate())
+        /** АДМИНКА */
+        if(admin.isAdmin(chatId) || message.equals("/admin"))
         {
-            answer = admin.onUpdateReceived(message);
+            answer = admin.onUpdateReceived(message, chatId);
+            sendMsg(chatId, answer);
+            return;
         }
-        else if(!output.equals("")) {
+
+        /** ПОЛЬЗОВАТЕЛЬ */
+        if(!output.equals("")) {
             answer = predictor.ask("/start");
         }
         else
@@ -42,9 +47,7 @@ public class Bot extends TelegramLongPollingBot {
         Log.log(output + "[QUESTION]: " + message);
         Log.log(output + "[ANSWER]: " + answer);
 
-        if(!admin.isActivate())
-            dataBase.insert(chatId, message, answer);
-
+        dataBase.insert(chatId, message, answer);
         sendMsg(chatId, answer);
     }
 
