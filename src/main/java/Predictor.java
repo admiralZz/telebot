@@ -31,6 +31,16 @@ public class Predictor {
 
     };
 
+    private String[] greetings = {
+            "Привет",
+            "Приветствую",
+            "Здраствуйте",
+            "Здрасте",
+            "Здравствуйте",
+            "Доброго времени суток",
+            "Рад приветствовать"
+    };
+
     public Predictor()
     {
 
@@ -53,6 +63,12 @@ public class Predictor {
 
             if(!badQuestion1.equals("") || !badQuestion2.equals(""))
                 return "На такие вопросы я не отвечаю";
+        }
+
+        for(String greeting : greetings)
+        {
+            if(!Regexer.parse(question, "^" + greeting + ".*$").equals(""))
+                return greetings[random.nextInt(greetings.length)] + "!";
         }
 
         return answers[random.nextInt(answers.length)];
