@@ -63,6 +63,7 @@ public class Admin {
                 return "[ADMIN]: Я уже к вашим услугам, не стоит меня звать...";
 
             isActivate = true;
+            Log.log("[ANSWER]: ADMIN CHAT ID=" + chatId);
             this.chatId = chatId;
             return "[ADMIN]: Введите секретное слово...";
         }
@@ -133,6 +134,9 @@ public class Admin {
     }
     public boolean isAdmin(String chatId)
     {
+        if(chatId == null)
+            return false;
+
         return this.chatId.equals(chatId);
     }
 
