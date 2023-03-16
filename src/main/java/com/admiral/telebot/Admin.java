@@ -2,6 +2,7 @@ package com.admiral.telebot;
 
 import java.util.Random;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 public class Admin {
 
@@ -13,10 +14,10 @@ public class Admin {
     private boolean isAccessOpen;
     private String chatId = "";
     private CustomTimer timer;
-    private Random random = new Random();
+    private final Random random = new Random();
 
-    private DataBase dataBase;
-    private Bot bot;
+    private final DataBase dataBase;
+    private final Bot bot;
 
     // Набор ответов
     private final String[] answers = {
@@ -95,31 +96,34 @@ public class Admin {
      */
     private String commands(String question)
     {
-        String answer = "";
+        if(question.equals("/read")) {
+            StringBuilder answer = new StringBuilder("\n\n");
+            for(String row : dataBase.read())
+                answer.append(row).append("\n\n");
 
-        switch (question)
-        {
-            case "/read":
-            {
-                answer = "\n\n";
-                for(String row : dataBase.read())
-                    answer += row + "\n\n";
-            }
-            break;
-
-            case "/close":
-            {
-                answer = "До встречи Господин...";
-                closing();
-            }
-            break;
-
-            default:
-                answer = answers[random.nextInt(answers.length)];
-                break;
+            return answer.toString();
         }
 
-        return answer;
+        if(question.equals("/close")) {
+            String answer = "До встречи Господин...";
+            closing();
+            return answer;
+        }
+
+        if(question.matches("^/write \\d{1,64} .{1,2048}$")) {
+            return Stream.of(question)
+                    .map(arr -> arr.split(" "))
+                    .map(arr -> write(arr[1], arr[2]))
+                    .findFirst().get();
+        }
+
+        return answers[random.nextInt(answers.length)];
+    }
+
+    private String write(String clientChatId, String message) {
+        bot.sendMsg(clientChatId, message);
+
+        return "Отправлено!";
     }
 
     private void closing()
