@@ -25,7 +25,7 @@
                     <assembleDirectory>target</assembleDirectory>
                     <programs>
                         <program>
-                            <mainClass>Bot</mainClass>
+                            <mainClass>com.admiral.telebot.Bot</mainClass>
                             <name>primussbot</name>
                         </program>
                     </programs>
@@ -46,12 +46,12 @@
         <dependency>
             <groupId>org.telegram</groupId>
             <artifactId>telegrambots</artifactId>
-            <version>3.5</version>
+            <version>6.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.5</version>
+            <version>42.5.4</version>
         </dependency>
     </dependencies>
 

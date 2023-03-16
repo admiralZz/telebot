@@ -1,11 +1,13 @@
+package com.admiral.telebot;
+
 import java.util.Random;
 import java.util.TimerTask;
 
 public class Admin {
 
-    private final static String ON_COMMAND = "/admin";
-    private final static String PASSWORD = "Сим сим откройся!";
-    private final static int timeOfLive = 60_000 * 10; // 10 минут
+    private static final String ON_COMMAND = "/admin";
+    private static final String PASSWORD = "Сим сим откройся!";
+    private static final int TIME_TO_LIVE = 60_000 * 10; // 10 минут
 
     private boolean isActivate;
     private boolean isAccessOpen;
@@ -71,7 +73,7 @@ public class Admin {
         {
             if(message.equals(PASSWORD)) {
                 isAccessOpen = true;
-                timer = new CustomTimer(tmClosing, timeOfLive);
+                timer = new CustomTimer(tmClosing, TIME_TO_LIVE);
                 timer.start();
                 dataBase.insert(chatId, message, "ВХОД В АДМИНКУ");
                 return "[ADMIN]: Рад служить вам Господин";

@@ -1,12 +1,14 @@
-import org.telegram.telegrambots.ApiContextInitializer;
-import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.api.methods.send.SendMessage;
-import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.exceptions.TelegramApiException;
-import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
-import org.telegram.telegrambots.generics.LongPollingBot;
+package com.admiral.telebot;
 
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.LongPollingBot;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,6 +53,11 @@ public class Bot extends TelegramLongPollingBot {
         sendMsg(chatId, answer);
     }
 
+    @Override
+    public void onUpdatesReceived(List<Update> updates) {
+        super.onUpdatesReceived(updates);
+    }
+
     /**
      * Метод для настройки сообщения и его отправки.
      * @param chatId id чата
@@ -88,11 +95,10 @@ public class Bot extends TelegramLongPollingBot {
 
     public static void main(String[] args)
     {
-        ApiContextInitializer.init();
-        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
         try {
+            TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
             telegramBotsApi.registerBot(Bot.getBot());
-        } catch (TelegramApiRequestException e) {
+        } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }

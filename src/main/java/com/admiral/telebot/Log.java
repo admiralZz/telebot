@@ -1,3 +1,4 @@
+package com.admiral.telebot;
 
 public class Log {
     public static void log(Object msg)

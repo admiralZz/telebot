@@ -1,8 +1,14 @@
+package com.admiral.telebot;
+
 import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.ArrayList;
 
 public class DataBase {
+
+    private static final String DB_URL = "jdbc:postgresql://localhost:5432/primussbotdb";
+    private static final String DB_USER = "botuser";
+    private static final String DB_PASSWORD = "qwe123";
 
     public DataBase()
     {
@@ -21,9 +27,9 @@ public class DataBase {
             e.printStackTrace();
         }
 
-        String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        String dbUrl = DB_URL;
 
-        return DriverManager.getConnection(dbUrl);
+        return DriverManager.getConnection(dbUrl, DB_USER, DB_PASSWORD);
     }
 
     /**
@@ -37,7 +43,7 @@ public class DataBase {
         try(Connection connection = getConnection();
             Statement statement = connection.createStatement())
         {
-            statement.execute("insert into messages(chat_id,question,answer) values('" + chatId + "','" + question + "','" + answer + "');");
+            statement.execute("insert into message(chat_id,question,answer) values('" + chatId + "','" + question + "','" + answer + "');");
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
@@ -56,7 +62,7 @@ public class DataBase {
         try(Connection connection = getConnection();
             Statement statement = connection.createStatement())
         {
-            ResultSet rs = statement.executeQuery("select * from messages");
+            ResultSet rs = statement.executeQuery("select * from message");
             while (rs.next())
             {
                 String row = "";

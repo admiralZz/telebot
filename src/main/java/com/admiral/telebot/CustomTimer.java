@@ -1,3 +1,5 @@
+package com.admiral.telebot;
+
 import java.util.TimerTask;
 
 public class CustomTimer {
