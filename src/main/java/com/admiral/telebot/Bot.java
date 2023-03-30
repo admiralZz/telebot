@@ -2,7 +2,6 @@ package com.admiral.telebot;
 
 import com.admiral.telebot.conf.BotConfig;
 import com.admiral.telebot.gpt.GPTSessionManager;
-import com.admiral.telebot.http.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -21,7 +20,6 @@ public class Bot extends TelegramLongPollingBot {
     private static final Logger log = LoggerFactory.getLogger(Bot.class);
     private final BotConfig config = BotConfig.getInstance();
     private final GPTSessionManager gptSessionManager = new GPTSessionManager(
-            new HttpClient(),
             (chatId,message) -> sendMsg(new SendMessage(String.valueOf(chatId), message))
     );
 

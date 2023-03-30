@@ -21,7 +21,7 @@ public class GPTSession {
         this.putAnswer = putAnswer;
     }
 
-    public synchronized void say(String message) {
+    public void say(String message) {
         log.debug("{}[QUESTION]: {}", username, message);
         prompt.add(GPTMessage.Role.USER, message);
         answer(client.send(prompt));

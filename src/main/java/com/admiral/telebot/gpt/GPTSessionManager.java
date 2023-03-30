@@ -15,11 +15,9 @@ public class GPTSessionManager {
     private static final Logger log = LoggerFactory.getLogger(GPTSessionManager.class);
     private final Map<Long, GPTSession> sessions = new HashMap<>();
     private final ExecutorService executorService = Executors.newWorkStealingPool();
-    private final Client client;
     private final BiConsumer<Long, String> getAnswer;
 
-    public GPTSessionManager(Client client, BiConsumer<Long, String> getAnswer) {
-        this.client = client;
+    public GPTSessionManager(BiConsumer<Long, String> getAnswer) {
         this.getAnswer = getAnswer;
     }
 
