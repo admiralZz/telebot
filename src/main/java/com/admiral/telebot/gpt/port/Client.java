@@ -2,9 +2,9 @@ package com.admiral.telebot.gpt.port;
 
 import com.admiral.telebot.gpt.GPTPrompt;
 
-public interface Client {
+import java.util.function.Consumer;
 
-    String send(String message);
+public interface Client {
 
     String send(GPTPrompt prompt);
 }

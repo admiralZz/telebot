@@ -1,5 +1,6 @@
 package com.admiral.telebot;
 
+import com.admiral.telebot.conf.BotConfig;
 import com.admiral.telebot.gpt.GPTSessionManager;
 import com.admiral.telebot.http.HttpClient;
 import org.slf4j.Logger;
@@ -18,7 +19,11 @@ import java.util.List;
 public class Bot extends TelegramLongPollingBot {
 
     private static final Logger log = LoggerFactory.getLogger(Bot.class);
-    private final GPTSessionManager gptSessionManager = new GPTSessionManager(new HttpClient());
+    private final BotConfig config = BotConfig.getInstance();
+    private final GPTSessionManager gptSessionManager = new GPTSessionManager(
+            new HttpClient(),
+            (chatId,message) -> sendMsg(new SendMessage(String.valueOf(chatId), message))
+    );
 
     /**
      * Метод для приема сообщений.
@@ -29,7 +34,7 @@ public class Bot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
 
         if(update.hasMessage()) {
-            sendMsg(makeAnswer(update));
+            handleUserMessage(update);
         }
     }
 
@@ -43,7 +48,7 @@ public class Bot extends TelegramLongPollingBot {
      *
      * @param sendMessage отправляемое сообщение.
      */
-    public synchronized void sendMsg(SendMessage sendMessage) {
+    public void sendMsg(SendMessage sendMessage) {
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
@@ -58,7 +63,7 @@ public class Bot extends TelegramLongPollingBot {
      */
     @Override
     public String getBotUsername() {
-        return "PrimussBot";
+        return config.getTelegramBotUsername();
     }
 
     /**
@@ -68,24 +73,18 @@ public class Bot extends TelegramLongPollingBot {
      */
     @Override
     public String getBotToken() {
-        return "895424372:AAHlLz11OTa2ZuQaTIG9mxffgu6R32XY2Xw";
+        return config.getTelegramBotApiToken();
     }
 
-    private SendMessage makeAnswer(final Update update) {
+    private void handleUserMessage(final Update update) {
         Message message = update.getMessage();
         String userName = message.getFrom().getUserName();
         Long chatId = message.getChatId();
 
-        SendMessage answer = new SendMessage(String.valueOf(chatId),
-                gptSessionManager.chat(
+        gptSessionManager.chat(
                 chatId,
                 userName,
-                message.getText())
-        );
-        log.debug("{}[QUESTION]: {}", userName, message.getText());
-        log.debug("{}[ANSWER]: {}", userName, answer.getText());
-
-        return answer;
+                message.getText());
     }
 
     public static void main(String[] args) {

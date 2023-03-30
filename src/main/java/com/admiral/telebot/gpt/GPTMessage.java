@@ -23,7 +23,7 @@ public class GPTMessage {
         SYSTEM("system")
         ;
 
-        private String role;
+        private final String role;
         Role(String role) {
             this.role = role;
         }
