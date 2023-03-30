@@ -1,56 +1,36 @@
 package com.admiral.telebot;
 
+import com.admiral.telebot.gpt.GPTSessionManager;
+import com.admiral.telebot.http.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.LongPollingBot;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Bot extends TelegramLongPollingBot {
 
-    private Predictor predictor = new Predictor();
-    private DataBase dataBase = new DataBase();
-    private Admin admin = new Admin(this, dataBase);
-    private Logger log = Logger.getAnonymousLogger();
+    private static final Logger log = LoggerFactory.getLogger(Bot.class);
+    private final GPTSessionManager gptSessionManager = new GPTSessionManager(new HttpClient());
 
     /**
      * Метод для приема сообщений.
+     *
      * @param update Содержит сообщение от пользователя.
      */
     @Override
     public void onUpdateReceived(Update update) {
 
-        String chatId = update.getMessage().getChatId().toString();
-        String message = update.getMessage().getText();
-        String output = getContactName(update) + getContactPhone(update);
-        String answer;
-
-        /** АДМИНКА */
-        if(admin.isAdmin(chatId) || message.equals("/admin"))
-        {
-            answer = admin.onUpdateReceived(message, chatId);
-            sendMsg(chatId, answer);
-            return;
+        if(update.hasMessage()) {
+            sendMsg(makeAnswer(update));
         }
-
-        /** ПОЛЬЗОВАТЕЛЬ */
-        if(!output.equals("")) {
-            answer = predictor.ask("/start");
-        }
-        else
-            answer = predictor.ask(message);
-
-        Log.log(output + "[QUESTION]: " + message);
-        Log.log(output + "[ANSWER]: " + answer);
-
-        dataBase.insert(chatId, message, answer);
-        sendMsg(chatId, answer);
     }
 
     @Override
@@ -60,23 +40,20 @@ public class Bot extends TelegramLongPollingBot {
 
     /**
      * Метод для настройки сообщения и его отправки.
-     * @param chatId id чата
-     * @param s Строка, которую необходимо отправить в качестве сообщения.
+     *
+     * @param sendMessage отправляемое сообщение.
      */
-    public synchronized void sendMsg(String chatId, String s) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(chatId);
-        sendMessage.setText(s);
+    public synchronized void sendMsg(SendMessage sendMessage) {
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
-            log.log(Level.SEVERE, "Exception: ", e.toString());
+            log.debug("Exception: {}", e.toString());
         }
     }
 
     /**
      * Метод возвращает имя бота, указанное при регистрации.
+     *
      * @return имя бота
      */
     @Override
@@ -86,6 +63,7 @@ public class Bot extends TelegramLongPollingBot {
 
     /**
      * Метод возвращает token бота для связи с сервером Telegram
+     *
      * @return token для бота
      */
     @Override
@@ -93,42 +71,35 @@ public class Bot extends TelegramLongPollingBot {
         return "895424372:AAHlLz11OTa2ZuQaTIG9mxffgu6R32XY2Xw";
     }
 
-    public static void main(String[] args)
-    {
+    private SendMessage makeAnswer(final Update update) {
+        Message message = update.getMessage();
+        String userName = message.getFrom().getUserName();
+        Long chatId = message.getChatId();
+
+        SendMessage answer = new SendMessage(String.valueOf(chatId),
+                gptSessionManager.chat(
+                chatId,
+                userName,
+                message.getText())
+        );
+        log.debug("{}[QUESTION]: {}", userName, message.getText());
+        log.debug("{}[ANSWER]: {}", userName, answer.getText());
+
+        return answer;
+    }
+
+    public static void main(String[] args) {
         try {
             TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
             telegramBotsApi.registerBot(Bot.getBot());
+            log.info("Bot is started...");
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }
 
+
     private static LongPollingBot getBot() {
         return new Bot();
-    }
-
-    private String getContactName(Update update) {
-
-        String name;
-
-        try {
-            name = "[" + update.getMessage().getContact().getFirstName() + "]";
-        } catch (Exception e) {
-            return "";
-        }
-
-        return name;
-    }
-    private String getContactPhone(Update update)
-    {
-        String phone;
-
-        try {
-            phone = "[" + update.getMessage().getContact().getFirstName() + "]";
-        } catch (Exception e) {
-            return "";
-        }
-
-        return phone;
     }
 }
