@@ -22,13 +22,10 @@ public class HighloadTest {
             threads.get(chatId).sendAnswer(message);
         });
 
-        for(long i = 1; i <= 30; i++) {
-            long chatId = i;
-            executorService.submit(() -> {
-                User user = new User(manager, chatId);
-                threads.put(chatId, user);
-                user.startChat();
-            });
+        for(long i = 1; i <= 5; i++) {
+            User user = new User(manager, i);
+            threads.put(i, user);
+            user.startChat();
             Thread.sleep(500);
         }
 
@@ -64,8 +61,16 @@ public class HighloadTest {
         }
 
         void startChat() {
-            startTime = System.currentTimeMillis();
+            try {
+            manager.chat(chatId, "user" + chatId, "Привет");
+            Thread.sleep(200);
             manager.chat(chatId, "user" + chatId, "Чем занимаешься?");
+            Thread.sleep(300);
+            manager.chat(chatId, "user" + chatId, "Как жизнь?");
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            startTime = System.currentTimeMillis();
         }
 
         void sendAnswer(String answer) {

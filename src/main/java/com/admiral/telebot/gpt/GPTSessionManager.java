@@ -11,10 +11,10 @@ import java.util.function.BiConsumer;
 public class GPTSessionManager {
     private static final Logger log = LoggerFactory.getLogger(GPTSessionManager.class);
     private final Map<Long, GPTSession> sessions = new ConcurrentHashMap<>();
-    private final ExecutorService executorService = new ThreadPoolExecutor(20, 20, 0L, TimeUnit.MILLISECONDS,
-            new LinkedTransferQueue<>());
 
     private final BiConsumer<Long, String> getAnswer;
+
+    private final HttpClient client = new HttpClient();
 
     public GPTSessionManager(BiConsumer<Long, String> getAnswer) {
         this.getAnswer = getAnswer;
@@ -26,13 +26,14 @@ public class GPTSessionManager {
                 .computeIfAbsent(chatId, id -> {
                     GPTSession s = new GPTSession(
                             username,
-                            new HttpClient(),
+                            client,
                             // ответит послать в callback
                             answer -> getAnswer.accept(chatId, answer)
                     );
                     log.debug("Created a new session for user {} chatId {}", username, chatId);
                     return s;
                 });
-        executorService.submit(() -> session.say(message));
+        session.say(message);
+
     }
 }
