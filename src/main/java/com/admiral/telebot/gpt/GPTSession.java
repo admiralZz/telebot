@@ -32,5 +32,4 @@ public class GPTSession {
         prompt.add(GPTMessage.Role.ASSISTANT, message);
         putAnswer.accept(message);
     }
-
 }

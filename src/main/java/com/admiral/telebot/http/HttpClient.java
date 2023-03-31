@@ -7,6 +7,7 @@ import com.admiral.telebot.gpt.port.Client;
 import com.admiral.telebot.http.data.MessageRequest;
 import com.admiral.telebot.http.data.MessageResponse;
 import com.admiral.telebot.http.data.common.Message;
+import com.admiral.telebot.http.data.error.ErrorResponse;
 import okhttp3.*;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
@@ -15,8 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class HttpClient implements Client {
@@ -43,14 +43,21 @@ public class HttpClient implements Client {
             MessageResponse messageResponse = null;
 
             if(body != null) {
-                String content = body.string();
-                messageResponse = Utill.readRequest(content, MessageResponse.class);
-                body.close();
+                if(code == 200) {
+                    String content = body.string();
+                    messageResponse = Utill.readRequest(content, MessageResponse.class);
+                    body.close();
+                } else {
+                    String content = body.string();
+                    ErrorResponse errorResponse = Utill.readRequest(content, ErrorResponse.class);
+                    log.error("Received the response: {} {}", code, Utill.prettyJson(errorResponse));
+                    throw new RuntimeException(errorResponse.getError().getMessage());
+                }
             } else {
-                log.debug("FAILED REQUEST\n url: {} \n code: {}\n body: {}\n", config.getGptApiUrl(), code, null);
+                log.error("FAILED REQUEST\n url: {} \n code: {}\n body: {}\n", config.getGptApiUrl(), code, null);
             }
 
-            log.debug("Received the response: {} {}", code, Utill.prettyJson(messageResponse));
+            log.trace("Received the response: {} {}", code, Utill.prettyJson(messageResponse));
             return messageResponse == null || messageResponse.getChoices() == null ? "" :
                     messageResponse.getChoices().stream()
                             .map(choicesItem -> choicesItem.getMessage().getContent())
@@ -78,7 +85,7 @@ public class HttpClient implements Client {
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + config.getGptApiToken())
                 .post(RequestBody.create(json, MediaType.parse(Constants.APPLICATION_JSON)))
                 .build();
-        log.debug("POST {} request: {}", httpUrl.url(), Utill.prettyJson(request));
+        log.trace("POST {} request: {}", httpUrl.url(), Utill.prettyJson(request));
 
         return client.newCall(req);
     }

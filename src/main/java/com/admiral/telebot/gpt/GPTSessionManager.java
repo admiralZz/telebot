@@ -1,20 +1,19 @@
 package com.admiral.telebot.gpt;
 
-import com.admiral.telebot.gpt.port.Client;
 import com.admiral.telebot.http.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
 public class GPTSessionManager {
     private static final Logger log = LoggerFactory.getLogger(GPTSessionManager.class);
-    private final Map<Long, GPTSession> sessions = new HashMap<>();
-    private final ExecutorService executorService = Executors.newWorkStealingPool();
+    private final Map<Long, GPTSession> sessions = new ConcurrentHashMap<>();
+    private final ExecutorService executorService = new ThreadPoolExecutor(20, 20, 0L, TimeUnit.MILLISECONDS,
+            new LinkedTransferQueue<>());
+
     private final BiConsumer<Long, String> getAnswer;
 
     public GPTSessionManager(BiConsumer<Long, String> getAnswer) {
