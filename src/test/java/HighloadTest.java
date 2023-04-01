@@ -1,3 +1,4 @@
+import com.admiral.telebot.gpt.GPTSession;
 import com.admiral.telebot.gpt.GPTSessionManager;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,14 +23,14 @@ public class HighloadTest {
             threads.get(chatId).sendAnswer(message);
         });
 
-        for(long i = 1; i <= 5; i++) {
+        for(long i = 1; i <= 10; i++) {
             User user = new User(manager, i);
             threads.put(i, user);
             user.startChat();
             Thread.sleep(500);
         }
 
-        executorService.awaitTermination(60, TimeUnit.SECONDS);
+        executorService.awaitTermination(120, TimeUnit.SECONDS);
         threads.forEach(
                 (chatId, user) -> log.info("user{} average time to answer: {}", chatId, toPrettyTime(user.getAverageTime()))
         );
@@ -62,11 +63,12 @@ public class HighloadTest {
 
         void startChat() {
             try {
-            manager.chat(chatId, "user" + chatId, "Привет");
-            Thread.sleep(200);
-            manager.chat(chatId, "user" + chatId, "Чем занимаешься?");
-            Thread.sleep(300);
-            manager.chat(chatId, "user" + chatId, "Как жизнь?");
+//                Thread.sleep(1000);
+                manager.chat(chatId, "user" + chatId, "Привет");
+                Thread.sleep(200);
+                manager.chat(chatId, "user" + chatId, "Чем занимаешься?");
+                Thread.sleep(300);
+                manager.chat(chatId, "user" + chatId, "Как жизнь?");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -74,6 +76,21 @@ public class HighloadTest {
         }
 
         void sendAnswer(String answer) {
+            if(Arrays.asList(GPTSession.preparedAnswers).contains(answer)) {
+                log.debug("Received prepared answer \"{}\" for user{}", answer, chatId);
+                return;
+            }
+
+            if(Arrays.asList(GPTSessionManager.preparedAnswers).contains(answer)) {
+                log.debug("Received prepared answer \"{}\" for user{}", answer, chatId);
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                startChat();
+                return;
+            }
             long endTime = System.currentTimeMillis();
             long timeToAnswer = endTime - startTime;
             timeOfAnswers.add(timeToAnswer);
