@@ -79,7 +79,7 @@ public class Bot extends TelegramLongPollingBot {
         String userName = message.getFrom().getUserName();
         Long chatId = message.getChatId();
 
-        gptSessionManager.chat(
+        gptSessionManager.chatWithControl(
                 chatId,
                 userName,
                 message.getText());

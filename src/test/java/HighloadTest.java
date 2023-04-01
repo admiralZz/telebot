@@ -1,4 +1,4 @@
-import com.admiral.telebot.gpt.GPTSession;
+import com.admiral.telebot.conf.BotConfig;
 import com.admiral.telebot.gpt.GPTSessionManager;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -16,15 +16,60 @@ public class HighloadTest {
     private static final List<Long> timeOfAnswers = new ArrayList<>();
 
     @Test
-    public void test() throws InterruptedException {
+    public void testChatWithControl() throws InterruptedException {
         Map<Long, User> threads = new HashMap<>();
 
         GPTSessionManager manager = new GPTSessionManager((chatId, message) -> {
-            threads.get(chatId).sendAnswer(message);
+            threads.get(chatId).putAnswer(message);
         });
 
         for(long i = 1; i <= 10; i++) {
-            User user = new User(manager, i);
+            long chatId = i;
+            User user = new User(i, () -> {
+                try {
+//                Thread.sleep(1000);
+                    manager.chatWithControl(chatId, "user" + chatId, "Привет");
+                    Thread.sleep(200);
+                    manager.chatWithControl(chatId, "user" + chatId, "Чем занимаешься?");
+                    Thread.sleep(300);
+                    manager.chatWithControl(chatId, "user" + chatId, "Как жизнь?");
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            threads.put(i, user);
+            user.startChat();
+            Thread.sleep(500);
+        }
+
+        executorService.awaitTermination(120, TimeUnit.SECONDS);
+        threads.forEach(
+                (chatId, user) -> log.info("user{} average time to answer: {}", chatId, toPrettyTime(user.getAverageTime()))
+        );
+    }
+
+    @Test
+    public void testChat() throws InterruptedException {
+        Map<Long, User> threads = new HashMap<>();
+
+        GPTSessionManager manager = new GPTSessionManager((chatId, message) -> {
+            threads.get(chatId).putAnswer(message);
+        });
+
+        for(long i = 1; i <= 10; i++) {
+            long chatId = i;
+            User user = new User(i, () -> {
+                try {
+//                Thread.sleep(1000);
+                    manager.chat(chatId, "user" + chatId, "Привет");
+                    Thread.sleep(200);
+                    manager.chat(chatId, "user" + chatId, "Чем занимаешься?");
+                    Thread.sleep(300);
+                    manager.chat(chatId, "user" + chatId, "Как жизнь?");
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             threads.put(i, user);
             user.startChat();
             Thread.sleep(500);
@@ -50,38 +95,28 @@ public class HighloadTest {
     }
 
     static class User {
-        private final GPTSessionManager manager;
         private final Long chatId;
+        private final Runnable runChat;
         private long startTime;
-
         private final List<Long> timeOfAnswers = new ArrayList<>();
 
-        public User(GPTSessionManager manager, Long chatId) {
-            this.manager = manager;
+        public User(Long chatId, Runnable runChat) {
             this.chatId = chatId;
+            this.runChat = runChat;
         }
 
         void startChat() {
-            try {
-//                Thread.sleep(1000);
-                manager.chat(chatId, "user" + chatId, "Привет");
-                Thread.sleep(200);
-                manager.chat(chatId, "user" + chatId, "Чем занимаешься?");
-                Thread.sleep(300);
-                manager.chat(chatId, "user" + chatId, "Как жизнь?");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            runChat.run();
             startTime = System.currentTimeMillis();
         }
 
-        void sendAnswer(String answer) {
-            if(Arrays.asList(GPTSession.preparedAnswers).contains(answer)) {
+        void putAnswer(String answer) {
+            if(Arrays.asList(BotConfig.preparedUserLimitAnswers).contains(answer)) {
                 log.debug("Received prepared answer \"{}\" for user{}", answer, chatId);
                 return;
             }
 
-            if(Arrays.asList(GPTSessionManager.preparedAnswers).contains(answer)) {
+            if(Arrays.asList(BotConfig.preparedGlobalLimitAnswers).contains(answer)) {
                 log.debug("Received prepared answer \"{}\" for user{}", answer, chatId);
                 try {
                     Thread.sleep(5000);

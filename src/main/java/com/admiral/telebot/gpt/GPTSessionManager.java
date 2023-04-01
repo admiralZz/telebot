@@ -1,5 +1,6 @@
 package com.admiral.telebot.gpt;
 
+import com.admiral.telebot.conf.BotConfig;
 import com.admiral.telebot.http.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,11 +11,7 @@ import java.util.function.BiConsumer;
 
 public class GPTSessionManager {
     private static final Logger log = LoggerFactory.getLogger(GPTSessionManager.class);
-    public static final String[] preparedAnswers = {
-            "Слишком много сообщений в данный момент..",
-            "Попробуйте попозже, очень много пользователей",
-            "Я сильно занят, многим нужно ответить" ,
-    };
+
     private final Map<Long, GPTSession> sessions = new ConcurrentHashMap<>();
 
     private final BiConsumer<Long, String> getAnswer;
@@ -28,8 +25,28 @@ public class GPTSessionManager {
     }
 
     public void chat(Long chatId, String username, String message) {
+        sessions
+                // создать сессию если отсутствует
+                .computeIfAbsent(chatId, id -> {
+                    GPTSession s = new GPTSession(
+                            username,
+                            client,
+                            // ответит послать в callback
+                            answer -> getAnswer.accept(chatId, answer)
+                    );
+                    log.debug("Created a new session for user {} chatId {}", username, chatId);
+                    return s;
+                }).say(message);
+
+    }
+
+    /**
+     * Чат с контролем сообщений в минуту
+     * */
+    public void chatWithControl(Long chatId, String username, String message) {
         if(counter.tooManyMessage()) {
-            getAnswer.accept(chatId, preparedAnswers[Utills.nextInt(preparedAnswers.length)]);
+            getAnswer.accept(chatId,
+                    Utills.getPreparedGlobalLimitAnswer());
             return;
         }
 

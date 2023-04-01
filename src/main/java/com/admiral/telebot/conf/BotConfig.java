@@ -14,6 +14,19 @@ public class BotConfig {
     private static final BotConfig instance = new BotConfig();
     private final Properties properties = new Properties();
 
+    public static final String[] preparedUserLimitAnswers = {
+            "Пожалуйста, дождитесь ответа",
+            "Дайте время...",
+            "Не так быстро" ,
+            "Будьте последовательны"
+    };
+
+    public static final String[] preparedGlobalLimitAnswers = {
+            "Слишком много сообщений в данный момент..",
+            "Попробуйте попозже, очень много пользователей",
+            "Я сильно занят, многим нужно ответить" ,
+    };
+
     private BotConfig() {
         try (FileReader reader = new FileReader(GPT_PROPERTIES)){
             properties.load(reader);

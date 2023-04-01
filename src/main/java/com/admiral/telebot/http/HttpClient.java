@@ -8,6 +8,7 @@ import com.admiral.telebot.http.data.MessageRequest;
 import com.admiral.telebot.http.data.MessageResponse;
 import com.admiral.telebot.http.data.common.Message;
 import com.admiral.telebot.http.data.error.ErrorResponse;
+import com.admiral.telebot.http.exception.LimitReachedException;
 import okhttp3.*;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
@@ -32,11 +33,11 @@ public class HttpClient implements Client {
             .build();
 
     @Override
-    public String send(GPTPrompt prompt) {
+    public String send(GPTPrompt prompt) throws LimitReachedException {
         return processTo(convertFrom(prompt.getMessages()));
     }
 
-    private String processTo(List<Message> messages) {
+    private String processTo(List<Message> messages) throws LimitReachedException {
         try(Response response = postCall(messages).execute()) {
             int code = response.code();
             ResponseBody body = response.body();
@@ -47,17 +48,23 @@ public class HttpClient implements Client {
                     String content = body.string();
                     messageResponse = Utill.readRequest(content, MessageResponse.class);
                     body.close();
-                } else {
+                } else if(code == 429) {
                     String content = body.string();
                     ErrorResponse errorResponse = Utill.readRequest(content, ErrorResponse.class);
-                    log.error("Received the response: {} {}", code, Utill.prettyJson(errorResponse));
+                    logErrorResponse(code, errorResponse);
+                    throw new LimitReachedException(errorResponse.getError().getMessage());
+                }
+                else {
+                    String content = body.string();
+                    ErrorResponse errorResponse = Utill.readRequest(content, ErrorResponse.class);
+                    logErrorResponse(code, errorResponse);
                     throw new RuntimeException(errorResponse.getError().getMessage());
                 }
             } else {
                 log.error("FAILED REQUEST\n url: {} \n code: {}\n body: {}\n", config.getGptApiUrl(), code, null);
             }
 
-            log.trace("Received the response: {} {}", code, Utill.prettyJson(messageResponse));
+            logResponse(code, messageResponse);
             return messageResponse == null || messageResponse.getChoices() == null ? "" :
                     messageResponse.getChoices().stream()
                             .map(choicesItem -> choicesItem.getMessage().getContent())
@@ -88,6 +95,14 @@ public class HttpClient implements Client {
         log.trace("POST {} request: {}", httpUrl.url(), Utill.prettyJson(request));
 
         return client.newCall(req);
+    }
+
+    private <T> void logErrorResponse(int code, T errorResponse) {
+        log.error("Received the response: {} {}", code, Utill.prettyJson(errorResponse));
+    }
+
+    private <T> void logResponse(int code, T errorResponse) {
+        log.trace("Received the response: {} {}", code, Utill.prettyJson(errorResponse));
     }
 
     private Message createMessage(String role, String content) {

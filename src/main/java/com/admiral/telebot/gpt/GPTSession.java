@@ -2,10 +2,10 @@ package com.admiral.telebot.gpt;
 
 import com.admiral.telebot.conf.BotConfig;
 import com.admiral.telebot.gpt.port.Client;
+import com.admiral.telebot.http.exception.LimitReachedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -22,12 +22,7 @@ public class GPTSession {
     private final ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
             new LinkedTransferQueue<>());
 
-    public static final String[] preparedAnswers = {
-            "Пожалуйста, дождитесь ответа",
-            "Дайте время...",
-            "Не так быстро" ,
-            "Будьте последовательны"
-    };
+
     private boolean isWaitingForAnswer = false;
 
 
@@ -37,13 +32,23 @@ public class GPTSession {
         this.putAnswer = putAnswer;
     }
 
+    /**
+     * Отправка сообщений с ограничением - необходимостью дождаться ответа
+     *
+     * */
     public boolean say(String message) {
-        log.debug("Waiting for answer: {}", isWaitingForAnswer);
+        log.debug("Waiting for answer {}: {}", username, isWaitingForAnswer);
         if(isWaitingForAnswer) {
             log.debug("{}[QUESTION]: {} is NOT PASSED", username, message);
-            putAnswer.accept(preparedAnswers[Utills.nextInt(preparedAnswers.length)]);
+            putAnswer.accept(Utills.getPreparedUserLimitAnswer());
             return false;
         }
+        send(message);
+
+        return true;
+    }
+
+    private void send(String message) {
         // Тут мы выстраиваем очередь сообщений у каждой сессии и не блокируем основной поток, чтобы он мог принимать
         // сообщения от других пользователей и создавать их сессии.
         // Сообщения будут отправляться по одному, дожидаясь ответа и затем следующие и т.д.
@@ -51,13 +56,16 @@ public class GPTSession {
         log.debug("{}[QUESTION]: {} is PASSED", username, message);
         executorService.submit(() -> {
             prompt.add(GPTMessage.Role.USER, message);
-            answer(client.send(prompt));
+            try {
+                gptAnswer(client.send(prompt));
+            } catch (LimitReachedException e) {
+                isWaitingForAnswer = false;
+                putAnswer.accept(Utills.getPreparedGlobalLimitAnswer());
+            }
         });
-
-        return true;
     }
 
-    public void answer(String message) {
+    public void gptAnswer(String message) {
         isWaitingForAnswer = false;
         log.debug("{}[ANSWER]: {}", username, message);
         prompt.add(GPTMessage.Role.ASSISTANT, message);
